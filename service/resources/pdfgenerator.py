@@ -57,7 +57,17 @@ class PDFGenerator():
                 }
             ],
             "to": email_to,
-            "from": request['emails']['from']
+            "from": request['emails']['from'],
+            "content": [
+                {
+                    "type": "text/html",
+                    "value": "<html><p>New Patient submission</p></html>"
+                },
+                {
+                    "type": "text/custom",
+                    "value": "New Patient submission"
+                }
+            ]
         }
         headers = {
             'ACCESS_KEY': os.environ.get('MYEMAIL_ACCESS_KEY'),
