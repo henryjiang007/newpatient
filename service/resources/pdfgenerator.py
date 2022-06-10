@@ -21,7 +21,7 @@ class PDFGenerator():
             if data:
                 basename = os.path.dirname(__file__)
                 output_pdf = utils.write_fillable_pdf(basename, data)
-                self.send_email(data, output_pdf)
+                self.send_email(data['request'], output_pdf)
         except Exception as error:
             print(f"Failed to generate PDF: {error}")
             print(traceback.format_exc())
