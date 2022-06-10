@@ -20,8 +20,10 @@ class PDFGenerator():
             data = json.loads(req.bounded_stream.read())
             if data:
                 basename = os.path.dirname(__file__)
-                output_pdf = utils.write_fillable_pdf(basename, data)
-                self.send_email(data['request'], output_pdf)
+                output_file = utils.write_fillable_pdf(basename, data)
+                with open(output_file, mode='rb') as file:
+                    output_pdf = file.read()
+                    self.send_email(data['request'], output_pdf)
         except Exception as error:
             print(f"Failed to generate PDF: {error}")
             print(traceback.format_exc())
@@ -49,8 +51,8 @@ class PDFGenerator():
             "subject": subject,
             "attachments": [
                 {
-                    "content": "",
-                    "path": output_pdf,
+                    "content": output_pdf,
+                    "path": "",
                     "filename": file_name,
                     "type": "application/pdf"
                 }
