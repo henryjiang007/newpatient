@@ -14,7 +14,7 @@ PARENT_KEY = '/Parent'
 SUBTYPE_KEY = '/Subtype'
 WIDGET_SUBTYPE_KEY = '/Widget'
 
-def write_fillable_pdf(basename, data_dict, file_url):
+def write_fillable_pdf(basename, data_dict):
     '''
     Generates a read-only PDF
     '''
