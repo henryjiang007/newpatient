@@ -31,7 +31,7 @@ class PDFGenerator():
             resp.text = json.dumps(str(error))
         finally: # clean up
             if len(output_pdf) > 1:
-                os.remove(output_pdf)
+                os.remove(output_file)
 
     # pylint: disable=no-self-use, too-many-locals
     def send_email(self, request, output_pdf):
