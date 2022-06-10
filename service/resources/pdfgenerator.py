@@ -51,7 +51,7 @@ class PDFGenerator():
             "attachments": [
                 {
                     "content": "",
-                    "path": os.environ.get('BASE_URL') + "/static/" + output_pdf,
+                    "path": os.environ.get('BASE_URL') + "static/" + output_pdf,
                     "filename": file_name,
                     "type": "application/pdf"
                 }
