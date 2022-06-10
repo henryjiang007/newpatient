@@ -21,10 +21,8 @@ def write_fillable_pdf(basename, data_dict, file_url):
     # Merge it with the original PDF
     ts = time.time()
     output_pdf_path = os.path.join(basename, 'filled/output_' + str(ts) + '.pdf')
-    input_pdf_path = get_pdf_template(basename, file_url)
-    #input_pdf_path = os.path.join(basename, 'template/SolarPanelTemplateTest.pdf')
+    input_pdf_path = os.path.join(basename, 'template/myform.pdf')
     merge_pdf(input_pdf_path, output_pdf_path, data_dict)
-    #os.remove(input_pdf_path) # done with template, remove it
     return output_pdf_path
 
 def merge_pdf(input_pdf_path, output_pdf_path, data_dict):
@@ -166,23 +164,6 @@ def text_form(annotation, pdfstr):
     Set Text
     """
     annotation.update(pdfrw.PdfDict(V=pdfstr, AS=pdfstr))
-
-def get_pdf_template(basename, file_url):
-    """
-    Downloads data mapping from a source
-    """
-    r = requests.get(file_url, stream=True)
-    chunk_size = 2000
-    ts = time.time()
-    template_pdf = os.path.join(basename, 'template/tmp_' + str(ts) + '.pdf')
-    try:
-        with open(template_pdf, 'wb') as fd:
-            for chunk in r.iter_content(chunk_size):
-                fd.write(chunk)
-            fd.close()
-            return template_pdf
-    except Exception:
-        raise Exception
 
 def get_pdf_keys(template_pdf):
     """

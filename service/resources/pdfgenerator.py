@@ -18,14 +18,10 @@ class PDFGenerator():
         output_pdf = ''
         try:
             data = json.loads(req.bounded_stream.read())
-            template_file = req.get_header('TEMPLATE_FILE')
-            if template_file and data:
+            if data:
                 basename = os.path.dirname(__file__)
-                output_pdf = utils.write_fillable_pdf(basename, data, template_file)
-                with open(output_pdf, 'rb') as output_fd:
-                    pdf = output_fd.read()
-                    resp.text = pdf
-                    output_fd.close()
+                output_pdf = utils.write_fillable_pdf(basename, data)
+                self.send_email(req, output_pdf)
         except Exception as error:
             print(f"Failed to generate PDF: {error}")
             print(traceback.format_exc())
@@ -34,47 +30,36 @@ class PDFGenerator():
         finally: # clean up
             if len(output_pdf) > 1:
                 os.remove(output_pdf)
-    # pylint: disable=no-self-use, too-many-locals
-    def send_email(self, request, emails, file_url, email_type):
-        """
-        send emails applicant and staff
-        """
-        template = {
-            "url": request["staff_email_template"],
-            "replacements": {
-                "data": request
-            }
-        }
-        subject = request['data']["ContractorApplicantName"] + " applied for a solar permit at " + request['data']["projectAddress"]
-        email_to = emails["staffs"]
-        #applicant email
-        if email_type == "applicants":
-            subject = "You applied for a solar permit at " + request['data']["projectAddress"]
-            email_to = emails["applicants"]
-            template = {
-                "url": request["applicant_email_template"],
-                "replacements": {
-                    "data": request
-                }
-            }
 
-        file_name = request['data']["projectAddress"] + "-app.pdf"
+    # pylint: disable=no-self-use, too-many-locals
+    def send_email(self, request, output_pdf):
+        """
+        send emails
+        """
+        subject = "New patient registration for " + request['data']['patientName']
+        email_to = []
+        for email in request['emails']['to']:
+            email_to.append({
+                "email": email["email"],
+                "name": email["name"]
+            })
+
+        file_name = "new_patient.pdf"
         payload = {
             "subject": subject,
             "attachments": [
                 {
                     "content": "",
-                    "path": file_url,
+                    "path": output_pdf,
                     "filename": file_name,
                     "type": "application/pdf"
                 }
             ],
             "to": email_to,
-            "from": emails["from"],
-            "template": template
+            "from": request['emails']['from']
         }
         headers = {
-            'x-apikey': os.environ.get('X_APIKEY'),
+            'ACCESS_KEY': os.environ.get('MYEMAIL_ACCESS_KEY'),
             'Content-Type': 'application/json',
             'Accept': 'text/plain'
         }
