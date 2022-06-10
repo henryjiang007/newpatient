@@ -7,6 +7,7 @@ import falcon
 from .resources.welcome import Welcome
 from .resources.pdfgenerator import PDFGenerator
 from .resources.formfields import FormFieldDef
+from .resources.staticresource import StaticResource
 
 def start_service():
     """Start this service
@@ -19,5 +20,6 @@ def start_service():
     api.add_route('/welcome', Welcome())
     api.add_route('/generate-pdf', PDFGenerator())
     api.add_route('/get-formfield-definition', FormFieldDef())
+    api.add_route('/static/{filename}', StaticResource())
     return api
 

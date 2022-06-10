@@ -21,17 +21,15 @@ class PDFGenerator():
             if data:
                 basename = os.path.dirname(__file__)
                 output_file = utils.write_fillable_pdf(basename, data)
-                with open(output_file, mode='rb') as file:
-                    output_pdf = file.read()
-                    self.send_email(data['request'], output_pdf)
+                self.send_email(data['request'], output_file)
         except Exception as error:
             print(f"Failed to generate PDF: {error}")
             print(traceback.format_exc())
             resp.status = falcon.HTTP_500   # pylint: disable=no-member
             resp.text = json.dumps(str(error))
-        finally: # clean up
-            if len(output_pdf) > 1:
-                os.remove(output_file)
+        #finally: # clean up
+            #if len(output_pdf) > 1:
+                #os.remove(output_file)
 
     # pylint: disable=no-self-use, too-many-locals
     def send_email(self, request, output_pdf):
@@ -51,8 +49,8 @@ class PDFGenerator():
             "subject": subject,
             "attachments": [
                 {
-                    "content": output_pdf,
-                    "path": "",
+                    "content": "",
+                    "path": os.environ.get('BASE_URL') + "/static/" + output_pdf,
                     "filename": file_name,
                     "type": "application/pdf"
                 }

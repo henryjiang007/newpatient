@@ -20,10 +20,11 @@ def write_fillable_pdf(basename, data_dict):
     '''
     # Merge it with the original PDF
     ts = time.time()
-    output_pdf_path = os.path.join(basename, 'filled/output_' + str(ts) + '.pdf')
+    output_file = 'filled/output_' + str(ts) + '.pdf'
+    output_pdf_path = os.path.join(basename, output_file)
     input_pdf_path = os.path.join(basename, 'template/myform.pdf')
     merge_pdf(input_pdf_path, output_pdf_path, data_dict)
-    return output_pdf_path
+    return output_file
 
 def merge_pdf(input_pdf_path, output_pdf_path, data_dict):
     """
