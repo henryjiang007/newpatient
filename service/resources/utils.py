@@ -22,7 +22,7 @@ def write_fillable_pdf(basename, data_dict):
     ts = time.time()
     output_file = 'output_' + str(ts) + '.pdf'
     output_pdf_path = os.path.join(basename, "filled/" + output_file)
-    input_pdf_path = os.path.join(basename, 'template/myform.pdf')
+    input_pdf_path = os.path.join(basename, 'template/New-Patient-Registation.pdf')
     merge_pdf(input_pdf_path, output_pdf_path, data_dict)
     return output_file
 
@@ -64,6 +64,7 @@ def fill_field(annotation, data_dict, key):
 
     if ft == '/Tx':
         text_form(annotation, str(data_dict[key]))
+        #print(key + ": " + str(data_dict[key]))
         annotation.update(pdfrw.PdfDict(AP=''))
     if ft == '/Ch':
         if ff and int(ff) & 1 << 17:  # test 18th bit
@@ -100,13 +101,22 @@ def radio_button(annotation, data_dict):
 
     if key in data_dict:
         value  = data_dict[key]
+        #print(" key is : " + key +  " value is:" + value)
         if '/N' in annotation['/AP']:
-            selected = annotation['/AP']['/N'].keys()[1].strip(('/'))
+            #if key == 'maritalStatus':
+            #print(annotation['/AP']['/N'])
+            if len(annotation['/AP']['/N'].keys())  > 1:
+                selected = annotation['/AP']['/N'].keys()[1].strip(('/'))
+            else:
+                selected = annotation['/AP']['/N'].keys()[0].strip(('/'))
+            #print("selected:  " +  selected  + "  key: " + key +  " value: " +  value)
             if selected == value:
                 for data_key in data_dict:
                     if key == data_key:
                         annotation.update(pdfrw.PdfDict(V=pdfrw.objects.pdfname.BasePdfName(f'/{value}')))
                         annotation[PARENT_KEY].update(pdfrw.PdfDict(V=pdfrw.objects.pdfname.BasePdfName(f'/{value}')))
+            else:
+                annotation[PARENT_KEY].update(pdfrw.PdfDict(V=pdfrw.objects.pdfname.BasePdfName(f'/{value}')))
 
 def checkbox(annotation, data_dict, key):
     """

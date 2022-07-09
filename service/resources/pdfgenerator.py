@@ -20,7 +20,7 @@ class PDFGenerator():
             data = json.loads(req.bounded_stream.read())
             if data:
                 basename = os.path.dirname(__file__)
-                output_file = utils.write_fillable_pdf(basename, data)
+                output_file = utils.write_fillable_pdf(basename, data['request']['data'])
                 #print(output_file)
                 self.send_email(data['request'], output_file)
         except Exception as error:
