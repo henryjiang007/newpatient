@@ -110,7 +110,7 @@ class PDFGenerator():
                 }
             ],
             "to": email_to,
-            "from": {"email": "jiang.henry@gmail.com", "name":  "Anson Dental"},
+            "from": {"email": "ansondentalstudio@gmail.com", "name":  "Anson Dental Studio"},
             "content": [
                 {
                     "type": "text/html",
