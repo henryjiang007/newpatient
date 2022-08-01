@@ -19,14 +19,16 @@ class PDFGenerator():
         # pylint: disable=broad-except,no-member
         try:
             data =  self.retrieve_submissions()
+            #data = json.loads(req.bounded_stream.read())
             if data:
                 basename = os.path.dirname(__file__)
                 for request in data:
+                    #request = data['request']
                     output_file = utils.write_fillable_pdf(basename, request['data'])
                     result = self.send_email(request['data'], output_file)
                     submission_id = request['_id']
-                    if result == 200:
-                        self.delete_submission(PDFGenerator.api_key, submission_id)
+                    #if result == 200:
+                        #self.delete_submission(PDFGenerator.api_key, submission_id)
         except Exception as error:
             print(f"Failed to generate PDF: {error}")
             print(traceback.format_exc())
@@ -51,7 +53,8 @@ class PDFGenerator():
         try:
             response = requests.request("POST", login_url, headers=headers, data=payload)
             jwt_token = response.headers['x-jwt-token']
-            url = "https://jotielkyhqtrqtb.form.io/newpatientregistration/submission?limit=10"
+            #url = "https://jotielkyhqtrqtb.form.io/newpatientregistration/submission?limit=10"
+            url = os.environ.get('FORMIO_SUBMISSION_URL') + '?limit=10'
             payload={}
             headers = {
                 'x-jwt-token': jwt_token
@@ -66,7 +69,8 @@ class PDFGenerator():
     def delete_submission(self, api_key, submission_id):
         """helper function for deleting a submission on formio"""
 
-        delete_url = 'https://jotielkyhqtrqtb.form.io/newpatientregistration/submission/' + str(submission_id)
+        #delete_url = 'https://jotielkyhqtrqtb.form.io/newpatientregistration/submission/' + str(submission_id)
+        delete_url = os.environ.get('FORMIO_SUBMISSION_URL') + '/' + str(submission_id)
         payload = {}
         files = {}
         headers = {
