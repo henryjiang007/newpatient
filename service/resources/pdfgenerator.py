@@ -25,7 +25,7 @@ class PDFGenerator():
                 for request in data:
                     #request = data['request']
                     output_file = utils.write_fillable_pdf(basename, request['data'])
-                    #result = self.send_email(request['data'], output_file)
+                    result = self.send_email(request['data'], output_file)
                     submission_id = request['_id']
                     print(output_file)
                     #if result == 200:
