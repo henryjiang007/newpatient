@@ -28,8 +28,8 @@ class PDFGenerator():
                     result = self.send_email(request['data'], output_file)
                     submission_id = request['_id']
                     print(output_file)
-                    #if result == 200:
-                        #self.delete_submission(PDFGenerator.api_key, submission_id)
+                    if result == 200:
+                        self.delete_submission(PDFGenerator.api_key, submission_id)
         except Exception as error:
             print(f"Failed to generate PDF: {error}")
             print(traceback.format_exc())
