@@ -14,7 +14,7 @@ class PDFGenerator():
     # pylint: disable=no-self-use
     api_key = ''
 
-    def on_post(self, req, resp):
+    def on_get(self, req, resp):
         """ Implement POST """
         # pylint: disable=broad-except,no-member
         try:
