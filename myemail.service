@@ -1,0 +1,15 @@
+[Unit]
+Description=myemail
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/myemail
+ExecStart=pipenv run gunicorn --reload --bind=127.0.0.1:8002 'service.microservice:start_service()'
+Restart=on-failure
+stderr_logfile = log/api_stderr.log
+stdout_logfile = log/api_stdout.log
+
+[Install]
+WantedBy=multi-user.target
