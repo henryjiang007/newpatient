@@ -14,7 +14,7 @@ def start_service():
     set SENTRY_DSN environmental variable to enable logging with Sentry
     """
     # Initialize Sentry
-    sentry_sdk.init(os.environ.get('SENTRY_DSN'))
+    #sentry_sdk.init(os.environ.get('SENTRY_DSN'))
     # Initialize Falcon
     api = falcon.App()
     api.add_route('/welcome', Welcome())

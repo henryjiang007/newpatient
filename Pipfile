@@ -18,6 +18,17 @@ pylint = "*"
 pytz = "*"
 pdfrw= "*"
 testfixtures= "*"
+sendgrid = "*"
+urllib3 = ">=1.26.5"
+jinja2 = "*"
+sqlalchemy = "*"
+psycopg2 = "*"
+alembic = "*"
+bs4 = "*"
+python-dateutil = "*"
+celery = "*"
+redis = "*"
 
 [requires]
 python_version = "3.7"
+

@@ -1,0 +1,253 @@
+"""Welcome export module"""
+import os
+import json
+import traceback
+import urllib.request
+import mimetypes
+import logging
+import requests
+import falcon
+from . import utils
+from python_http_client.exceptions import HTTPError
+from jinja2 import Template
+import sendgrid
+from sendgrid.helpers.mail import (Mail, From, Subject, Asm, GroupId, GroupsToDisplay)
+from service.resources.helpers.helpers import HelperService
+from .hooks import validate_access
+from bs4 import BeautifulSoup
+
+@falcon.before(validate_access)
+class PDFGenerator():
+    """PDFGenerator class"""
+    # pylint: disable=no-self-use
+    api_key = ''
+
+    def on_get(self, req, resp):
+        """ Implement POST """
+        # pylint: disable=broad-except,no-member
+        try:
+            data =  self.retrieve_submissions()
+            #data = json.loads(req.bounded_stream.read())
+            if data:
+                basename = os.path.dirname(__file__)
+                for request in data:
+                    #request = data['request']
+                    output_file = utils.write_fillable_pdf(basename, request['data'])
+                    result = self.sendemail(request['data'], output_file)
+                    submission_id = request['_id']
+                    if result:
+                        print(result)
+                        #self.delete_submission(PDFGenerator.api_key, submission_id)
+        except Exception as error:
+            print(f"Failed to generate PDF: {error}")
+            print(traceback.format_exc())
+            resp.status = falcon.HTTP_500   # pylint: disable=no-member
+            resp.text = json.dumps(str(error))
+
+    def retrieve_submissions(self):
+        """ retrieve submissions"""
+        email = os.environ.get('EMAIL')
+        password = os.environ.get('PASSWORD')
+        login_url = 'https://formio.form.io/user/login/submission?live=1'
+
+        payload = json.dumps({
+                "data": {
+                   "email":email,
+                    "password": password
+                }
+            })
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        try:
+            response = requests.request("POST", login_url, headers=headers, data=payload)
+            jwt_token = response.headers['x-jwt-token']
+            #url = "https://jotielkyhqtrqtb.form.io/newpatientregistration/submission?limit=10"
+            url = os.environ.get('FORMIO_SUBMISSION_URL') + '?limit=10'
+            payload={}
+            headers = {
+                'x-jwt-token': jwt_token
+            }
+            PDFGenerator.api_key = jwt_token
+            response = requests.request("GET", url, headers=headers, data=payload)
+            return response.json()
+        except Exception as err: # pylint: disable=broad-except
+            print("login error: {0}".format(err))
+            return None
+
+    def delete_submission(self, api_key, submission_id):
+        """helper function for deleting a submission on formio"""
+
+        #delete_url = 'https://jotielkyhqtrqtb.form.io/newpatientregistration/submission/' + str(submission_id)
+        delete_url = os.environ.get('FORMIO_SUBMISSION_URL') + '/' + str(submission_id)
+        payload = {}
+        files = {}
+        headers = {
+            'x-jwt-token': api_key
+        }
+        print(submission_id)
+        try:
+            response = requests.request("DELETE", delete_url, headers=headers, \
+                data=payload, files=files)
+            response.raise_for_status()
+            return response
+        except Exception as err: # pylint: disable=broad-except
+            print("deletion error: {0}".format(err))
+            return None
+
+    @staticmethod
+    # pylint: disable=no-self-use, too-many-locals
+    def sendemail(request, output_pdf):
+        """
+        send emails
+        """
+        subject = "New patient registration for " + request['patientName']
+        email_to = []
+        email_to.append({
+            "email": 'ansondentalstudio@gmail.com',
+            "name": 'Anson Dental'
+        })
+
+        html_content  = "<html><body><table>"
+        for key, value in request.items():
+            html_content = html_content + "<tr><td>" + key + "</td><td>" + str(value) + "</td></tr>"
+        html_content = html_content + "</table></body></html>"
+        file_name = "new_patient.pdf"
+        payload = {
+            "subject": subject,
+            "attachments": [
+                {
+                    "content": "",
+                    "path": os.environ.get('BASE_URL') + "/static/" + output_pdf,
+                    "filename": file_name,
+                    "type": "application/pdf"
+                }
+            ],
+            "to": email_to,
+            "from": {"email": "ansondentalstudio@gmail.com", "name":  "Anson Dental Studio"},
+            "content": [
+                {
+                    "type": "text/html",
+                    "value": html_content
+                },
+                {
+                    "type": "text/custom",
+                    "value": "New Patient submission"
+                }
+            ]
+        }
+        # headers = {
+        #     'ACCESS_KEY': os.environ.get('MYEMAIL_ACCESS_KEY'),
+        #     'Content-Type': 'application/json',
+        #     'Accept': 'text/plain'
+        # }
+        result = None
+        json_data = json.dumps(payload)
+        try:
+            # result = requests.post(
+            #     os.environ.get('EMAIL_SERVICE_URL'),
+            #     headers=headers,
+            #     data=json_data)
+            result = PDFGenerator.send_email(json_data)
+        except requests.exceptions.HTTPError as errh:
+            logging.exception("HTTPError: %s", errh)
+        except requests.exceptions.ConnectionError as errc:
+            logging.exception("Error Connecting: %s", errc)
+        except requests.exceptions.Timeout as errt:
+            logging.exception("Timeout Error: %s", errt)
+        except requests.exceptions.RequestException as err:
+            logging.exception("OOps: Something Else: %s", err)
+
+        return result
+
+    def send_email(json_data):
+        # pylint: disable=no-member,too-many-arguments,too-many-statements
+        """ send out single email """
+        data = json.loads(json_data)
+        try:
+            message = Mail()
+
+            #One line settings """
+            message.from_email = From(data['from']['email'], data['from']['name'])
+            message.subject = Subject(data['subject'])
+
+            if 'asm' in data.keys() and data['asm'] is not None and data['asm']['group_id'] != '':
+                message.asm = Asm(GroupId(data['asm']['group_id']),
+                    GroupsToDisplay(data['asm']['groups_to_display']))
+
+            func_switcher = {
+                "to": HelperService.get_emails,
+                "cc": HelperService.get_emails,
+                "bcc": HelperService.get_emails,
+                "content": HelperService.get_content,
+                "attachments": HelperService.get_attachments,
+                "custom_args": HelperService.get_custom_args
+            }
+            message.to = func_switcher.get("to")(data['to'], 'to')
+            data_keys = data.keys()
+            if 'cc' in data_keys:
+                message.cc = func_switcher.get("cc")(data['cc'], 'cc')
+            if 'bcc' in data_keys:
+                message.bcc = func_switcher.get("bcc")(data['bcc'], 'bcc')
+            if 'template' in data_keys and not 'content' in data_keys:
+                data['content'] = PDFGenerator.generate_template_content(data['template'])
+                data_keys = data.keys()
+            if 'content' in data_keys:
+                message.content = func_switcher.get("content")(data['content'])
+            if 'attachments' in data_keys:
+                message.attachment = func_switcher.get("attachments")(data['attachments'])
+            if 'custom_args' in data_keys:
+                message.custom_arg = func_switcher.get("custom_args")(data['custom_args'])
+            #logging.warning(message.get())
+            sendgrid_client = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
+            response = sendgrid_client.send(message)
+        except HTTPError as err:
+            print("send_grid error: {0}".format(err.to_dict))
+            return False
+        except Exception as err: # pylint: disable=broad-except
+            print("exception")
+            #resp.body = json.dumps(str(err))
+            print("task Error: {0}".format(err))
+            print(traceback.format_exc())
+            return False
+        finally:
+            print("task:finished with id")
+            return True
+
+    def generate_template_content(template_params):
+        """ generate array of html/plain text content from template """
+        result = []
+        try:
+            # Python 3
+            import urllib.request as urllib # pylint: disable=C
+        except ImportError:
+            # Python 2
+            import urllib2 as urllib # pylint: disable=C
+
+        # url and replacements are required
+        if 'url' not in template_params:
+            raise KeyError('url value is required for email template')
+        if 'replacements' not in template_params:
+            raise KeyError('replacement values are required for email template')
+
+        # with urllib.request.urlopen(template_params['url']) as conn:
+        #     template_content = conn.read()
+        print(template_params['url'])
+        template_content = urllib.urlopen(template_params['url']).read()
+        if not isinstance(template_content, str):
+            template_content = template_content.decode("utf-8")
+        template = Template(template_content)
+        html_content = template.render(template_params['replacements'])
+
+        result.append({
+            "type": mimetypes.types_map['.html'],
+            "value": html_content
+        })
+
+        soup = BeautifulSoup(html_content, features="html.parser")
+        result.append({
+            "type": mimetypes.types_map['.txt'],
+            "value": soup.get_text()
+        })
+
+        return result

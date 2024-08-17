@@ -27,7 +27,6 @@ class PDFGenerator():
                     output_file = utils.write_fillable_pdf(basename, request['data'])
                     result = self.send_email(request['data'], output_file)
                     submission_id = request['_id']
-                    print(output_file)
                     if result == 200:
                         self.delete_submission(PDFGenerator.api_key, submission_id)
         except Exception as error:
@@ -109,7 +108,7 @@ class PDFGenerator():
             "attachments": [
                 {
                     "content": "",
-                    "path": os.environ.get('BASE_URL') + "/static/" + output_pdf,
+                    "path": output_pdf,
                     "filename": file_name,
                     "type": "application/pdf"
                 }
@@ -130,9 +129,11 @@ class PDFGenerator():
         headers = {
             'ACCESS_KEY': os.environ.get('MYEMAIL_ACCESS_KEY'),
             'Content-Type': 'application/json',
-            'Accept': 'text/plain'
+            'Accept': 'text/plain',
+            'User-Agent': 'Mozilla/5.0'
         }
         result = None
+
         json_data = json.dumps(payload)
         try:
             result = requests.post(
@@ -140,12 +141,12 @@ class PDFGenerator():
                 headers=headers,
                 data=json_data)
         except requests.exceptions.HTTPError as errh:
-            logging.exception("HTTPError: %s", errh)
+            print("HTTPError: %s", errh)
         except requests.exceptions.ConnectionError as errc:
-            logging.exception("Error Connecting: %s", errc)
+            print("Error Connecting: %s", errc)
         except requests.exceptions.Timeout as errt:
-            logging.exception("Timeout Error: %s", errt)
+            print("Timeout Error: %s", errt)
         except requests.exceptions.RequestException as err:
-            logging.exception("OOps: Something Else: %s", err)
+            print("OOps: Something Else: %s", err)
 
         return result.status_code

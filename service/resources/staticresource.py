@@ -5,6 +5,7 @@ import falcon
 class StaticResource(object):
     def on_get(self, req, resp, filename):
         filename = os.path.dirname(__file__) + "/filled/" +  filename
+ 
         print(filename)
         if os.path.exists(filename):
             resp.status = falcon.HTTP_200
