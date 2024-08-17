@@ -1,0 +1,15 @@
+[Unit]
+Description=Gunicorn
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/newpatient
+ExecStart=pipenv run gunicorn --reload --timeout 90 --bind=127.0.0.1:8001 'service.microservice:start_service()'
+Restart=on-failure
+stderr_logfile = log/api_stderr.log
+stdout_logfile = log/api_stdout.log
+
+[Install]
+WantedBy=multi-user.target
